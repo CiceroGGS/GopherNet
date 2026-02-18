@@ -1,10 +1,42 @@
 package controllers
 
-import "net/http"
+import (
+	"api/src/banco"
+	"api/src/modelos"
+	"api/src/repositorios"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
 
-// CriarUsuario inere um usuario no banco de dados
+// CriarUsuario insere um usuario no banco de dados
 func CriarUsuario(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Criando usuario"))
+	corpoDaRequisicao, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var u modelos.Usuario
+	if err = json.Unmarshal(corpoDaRequisicao, &u); err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := banco.Conectar()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
+
+	usuarioID, err := repositorio.Criar(u)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Write([]byte(fmt.Sprintf("Id inserido: %d", usuarioID)))
 }
 
 // BuscarUsuarios busca todos usuarios salvos no banco

@@ -34,5 +34,4 @@ func Carregar() {
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_NAME"),
 	)
-
 }
