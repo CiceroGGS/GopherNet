@@ -4,7 +4,7 @@ import "time"
 
 // Usuario repreenta um usuario que utilizara/utiliza a rade social
 type Usuario struct {
-	ID       uint      `json:"id,omitempty"`
+	ID       uint64    `json:"id,omitempty"`
 	Nome     string    `json:"nome,omitempty"`
 	Nick     string    `json:"nick,omitempty"`
 	Email    string    `json:"email,omitempty"`
