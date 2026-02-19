@@ -73,6 +73,7 @@ func (repositorio *Usuarios) Buscar(nomeOuNick string) ([]modelos.Usuario, error
 	return usuarios, nil
 }
 
+// BuscarPorID retorna um usuario especifico com base em seu id
 func (repositorio Usuarios) BuscarPorID(ID uint64) (modelos.Usuario, error) {
 	linhas, err := repositorio.db.Query(
 		"SELECT id, nome, nick, email, criadoEm FROM usuarios WHERE id = ?",
@@ -97,4 +98,21 @@ func (repositorio Usuarios) BuscarPorID(ID uint64) (modelos.Usuario, error) {
 	}
 
 	return usuario, nil
+}
+
+// Atualizar altera os dados de um usuario existentem no banco de dados
+func (repositorio Usuarios) Atualizar(ID uint64, usuario modelos.Usuario) error {
+	statement, err := repositorio.db.Prepare(
+		"UPDATE usuarios SET nome = ?, nick = ?, email = ? WHERE id = ?",
+	)
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err := statement.Exec(&usuario.Nome, &usuario.Nick, &usuario.Email, &usuario.ID); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -22,13 +22,13 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var u modelos.Usuario
-	if err = json.Unmarshal(corpoDaRequisicao, &u); err != nil {
+	var usuario modelos.Usuario
+	if err = json.Unmarshal(corpoDaRequisicao, &usuario); err != nil {
 		respostas.Erro(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if err = u.Preparar(); err != nil {
+	if err = usuario.Preparar("cadastro"); err != nil {
 		respostas.Erro(w, http.StatusBadRequest, err)
 		return
 	}
@@ -41,13 +41,13 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
-	u.ID, err = repositorio.Criar(u)
+	usuario.ID, err = repositorio.Criar(usuario)
 	if err != nil {
 		respostas.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	respostas.JSON(w, http.StatusCreated, u)
+	respostas.JSON(w, http.StatusCreated, usuario)
 }
 
 // BuscarUsuarios busca todos usuarios salvos no banco
@@ -100,7 +100,45 @@ func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
 
 // AtualizarUsuario atualiza um usuario no banco de dados
 func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Atualizar Usuario"))
+	parametros := mux.Vars(r)
+
+	usuarioID, err := strconv.ParseUint(parametros["usuarioId"], 10, 64)
+	if err != nil {
+		respostas.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	corpoDaRequisicao, err := io.ReadAll(r.Body)
+	if err != nil {
+		respostas.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	var usuario modelos.Usuario
+
+	if err = json.Unmarshal(corpoDaRequisicao, &usuario); err != nil {
+		respostas.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err = usuario.Preparar("edicao"); err != nil {
+		respostas.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	db, err := banco.Conectar()
+	if err != nil {
+		respostas.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
+	if err = repositorio.Atualizar(usuarioID, usuario); err != nil {
+		respostas.Erro(w, http.StatusInternalServerError, err)
+	}
+
+	respostas.JSON(w, http.StatusNoContent, nil)
 }
 
 // DeletarUsuario delete um usuario do banco de dados
