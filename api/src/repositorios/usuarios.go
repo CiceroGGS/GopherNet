@@ -3,6 +3,7 @@ package repositorios
 import (
 	"api/src/modelos"
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -112,6 +113,27 @@ func (repositorio Usuarios) Atualizar(ID uint64, usuario modelos.Usuario) error 
 
 	if _, err := statement.Exec(usuario.Nome, usuario.Nick, usuario.Email, ID); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Deletar apaga os dados de um usuario registrado no banco de dados
+func (repositorio Usuarios) Deletar(ID uint64) error {
+	statement, err := repositorio.db.Prepare("DELETE FROM usuarios WHERE id = ?")
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	resultado, err := statement.Exec(ID)
+	if err != nil {
+		return err
+	}
+
+	linhasAfetadas, _ := resultado.RowsAffected()
+	if linhasAfetadas == 0 {
+		return errors.New("nenhum usuário encontrado para deletar")
 	}
 
 	return nil
