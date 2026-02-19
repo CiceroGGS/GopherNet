@@ -110,7 +110,7 @@ func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 
 	corpoDaRequisicao, err := io.ReadAll(r.Body)
 	if err != nil {
-		respostas.Erro(w, http.StatusInternalServerError, err)
+		respostas.Erro(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
@@ -136,6 +136,7 @@ func AtualizarUsuario(w http.ResponseWriter, r *http.Request) {
 	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
 	if err = repositorio.Atualizar(usuarioID, usuario); err != nil {
 		respostas.Erro(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	respostas.JSON(w, http.StatusNoContent, nil)

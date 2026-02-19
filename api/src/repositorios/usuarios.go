@@ -110,7 +110,7 @@ func (repositorio Usuarios) Atualizar(ID uint64, usuario modelos.Usuario) error 
 	}
 	defer statement.Close()
 
-	if _, err := statement.Exec(&usuario.Nome, &usuario.Nick, &usuario.Email, &usuario.ID); err != nil {
+	if _, err := statement.Exec(usuario.Nome, usuario.Nick, usuario.Email, ID); err != nil {
 		return err
 	}
 
