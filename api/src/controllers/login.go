@@ -1,49 +1,57 @@
 package controllers
 
 import (
-	"api/src/banco"
-	"api/src/modelos"
-	"api/src/repositorios"
-	"api/src/respostas"
-	"api/src/seguranca"
 	"encoding/json"
-	"errors"
+	"fmt"
+	"gophernet/authentication"
+	"gophernet/src/data"
+	"gophernet/src/models"
+	"gophernet/src/repositories"
+	"gophernet/src/responses"
+	"gophernet/src/security"
 	"io"
 	"net/http"
 )
 
-// Login e responsavel por autenticar um usuario na api
+// Login e responsavel pelo login e autenticacao do usuario na API
 func Login(w http.ResponseWriter, r *http.Request) {
-	corpoDaRequisicao, err := io.ReadAll(r.Body)
+	bodyRequest, err := io.ReadAll(r.Body)
 	if err != nil {
-		respostas.Erro(w, http.StatusUnprocessableEntity, err)
+		responses.Erro(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	var usuario modelos.Usuario
-	if err = json.Unmarshal(corpoDaRequisicao, &usuario); err != nil {
-		respostas.Erro(w, http.StatusInternalServerError, err)
+	var user models.Users
+	if err = json.Unmarshal(bodyRequest, &user); err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
 		return
 	}
 
-	db, err := banco.Conectar()
-	if err != nil {
-		respostas.Erro(w, http.StatusInternalServerError, err)
+	db, err := data.Connect()
+	if err = json.Unmarshal(bodyRequest, &user); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 	defer db.Close()
 
-	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
-	usuarioSalvoNoBanco, err := repositorio.BuscarUsuarioPorEmail(usuario.Email)
+	repo := repositories.NewUsersRepositories(db)
+	userInDB, err := repo.SearchByEmail(user.Email)
 	if err != nil {
-		respostas.Erro(w, http.StatusInternalServerError, errors.New("Usuário ou senha inválidos"))
+		responses.Erro(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if err = seguranca.VerificarSenha(usuarioSalvoNoBanco.Senha, usuario.Senha); err != nil {
-		respostas.Erro(w, http.StatusUnauthorized, errors.New("Usuário ou senha inválidos"))
+	if err = security.PasswordVerify(string(userInDB.Password), user.Password); err != nil {
+		responses.JSON(w, http.StatusUnauthorized, err)
 		return
 	}
 
-	w.Write([]byte("Login realizado com sucesso!"))
+	token, err := authentication.CreateToken(userInDB.ID)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	fmt.Println(token)
+	w.Write([]byte("Logado com sucesso"))
 }

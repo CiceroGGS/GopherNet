@@ -14,10 +14,12 @@ var (
 	ConnectionString = ""
 	// Port onde a API vai estar rodando
 	Port = 0
+	// SecretKey e a chave que vai ser usada para assinar o token
+	SecretKey []byte
 )
 
 // Carregar vai inicializar as variaveis de ambiente
-func Carregar() {
+func Load() {
 	var err error
 
 	if err = godotenv.Load(); err != nil {
@@ -34,4 +36,6 @@ func Carregar() {
 		os.Getenv("DB_PASSWORD"),
 		os.Getenv("DB_NAME"),
 	)
+
+	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 }

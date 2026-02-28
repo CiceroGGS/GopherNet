@@ -1,14 +1,13 @@
 package router
 
 import (
-	"api/src/router/rotas"
+	"gophernet/src/router/routes"
 
 	"github.com/gorilla/mux"
 )
 
-// Gerar cria a instância principal do roteador.
-func Gerar() *mux.Router {
+// Generate vai retornar um router com as rotas configuradas
+func Generate() *mux.Router {
 	r := mux.NewRouter()
-
-	return rotas.Configurar(r)
+	return routes.RouterConfig(r)
 }

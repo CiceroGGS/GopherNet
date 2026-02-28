@@ -1,14 +1,13 @@
-package banco
+package data
 
 import (
-	"api/src/config"
 	"database/sql"
+	"gophernet/src/config"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// Conectar abre conexao com banco de dados e a retorna
-func Conectar() (*sql.DB, error) {
+func Connect() (*sql.DB, error) {
 	db, err := sql.Open("mysql", config.ConnectionString)
 	if err != nil {
 		return nil, err
