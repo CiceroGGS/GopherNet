@@ -141,7 +141,7 @@ func (repo users) Delete(ID uint64) error {
 
 	rows, _ := exec.RowsAffected()
 	if rows == 0 {
-		return errors.New("usuário não")
+		return errors.New("usuário não localizado")
 	}
 
 	return nil

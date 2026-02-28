@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gophernet/src/config"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,7 +18,7 @@ func CreateToken(userID uint64) (string, error) {
 
 	permissions["authorized"] = true
 	permissions["exp"] = time.Now().Add(time.Hour * 6).Unix()
-	permissions["userId"] = userID
+	permissions["id"] = userID
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, permissions)
 
@@ -37,6 +38,26 @@ func TokenValidation(r *http.Request) error {
 	}
 
 	return errors.New("Token invalido")
+}
+
+// ExtractUserID retorna o id do usuario que esta salvo no token
+func ExtractUserID(r *http.Request) (uint64, error) {
+	tokenString := extractToken(r)
+	token, err := jwt.Parse(tokenString, returnVerificationKey)
+	if err != nil {
+		return 0, err
+	}
+
+	if permissions, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		userID, err := strconv.ParseUint(fmt.Sprintf("%.0f", permissions["id"]), 10, 64)
+		if err != nil {
+			return 0, err
+		}
+
+		return userID, nil
+	}
+
+	return 0, errors.New("Token invalido")
 }
 
 func extractToken(r *http.Request) string {

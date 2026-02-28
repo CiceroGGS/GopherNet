@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
+	"gophernet/authentication"
 	"gophernet/src/data"
 	"gophernet/src/models"
 	"gophernet/src/repositories"
@@ -109,6 +111,17 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userIDToken, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userIDToken != ID {
+		responses.Erro(w, http.StatusForbidden, errors.New("não é permitido atualizar outro usuário"))
+		return
+	}
+
 	bodyRequest, err := io.ReadAll(r.Body)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
@@ -153,6 +166,17 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userIDToken, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if userIDToken != ID {
+		responses.Erro(w, http.StatusForbidden, errors.New("não é permitido atualizar outro usuário"))
+		return
+	}
+
 	db, err := data.Connect()
 	if err != nil {
 		responses.Erro(w, http.StatusBadRequest, err)
@@ -166,5 +190,5 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responses.JSON(w, http.StatusNoContent, nil)
+	responses.JSON(w, http.StatusOK, nil)
 }
