@@ -186,7 +186,16 @@ func (repo users) Follow(userID, followerID uint64) error {
 
 // Unfollow remove o relacionamento de seguidor entre usuários.
 func (repo users) Unfollow(userID, followerID uint64) error {
-	statement, err := repo.db.Prepare("DELETE FROM seguidores WHERE usuario_id = ? AND seguidor_id = ?")
+	statement, err := repo.db.Prepare(
+		`
+		DELETE FROM
+			seguidores
+		WHERE
+			usuario_id = ?
+		AND
+			seguidor_id = ?
+		`,
+	)
 	if err != nil {
 		return err
 	}
@@ -288,4 +297,59 @@ func (repo users) FindFollowing(userID uint64) ([]models.Users, error) {
 	}
 
 	return users, nil
+}
+
+// UpdatePasswordByID atualiza a senha de um usuario na aplicacao filtrando pelo ID
+func (repo users) UpdatePassword(userID uint64, newPassword string) error {
+	statement, err := repo.db.Prepare(
+		`
+		UPDATE
+			usuarios
+		SET
+			senha = ?
+		WHERE
+			id = ?
+		`,
+	)
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err := statement.Exec(&newPassword, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repo users) FindPassword(userID uint64) (string, error) {
+	row, err := repo.db.Query(
+		`
+		SELECT
+			senha
+		FROM
+			usuarios
+		WHERE
+			id = ?
+		`,
+		userID,
+	)
+	if err != nil {
+		return "", err
+	}
+	defer row.Close()
+
+	var password models.Password
+	currentPassword := password.CurrentPassword
+
+	if row.Next() {
+		if err = row.Scan(
+			&currentPassword,
+		); err != nil {
+			return "", err
+		}
+	}
+
+	return currentPassword, nil
 }

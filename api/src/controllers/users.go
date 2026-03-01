@@ -8,6 +8,7 @@ import (
 	"gophernet/src/models"
 	"gophernet/src/repositories"
 	"gophernet/src/responses"
+	"gophernet/src/security"
 	"io"
 	"net/http"
 	"strconv"
@@ -111,13 +112,13 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userIDToken, err := authentication.ExtractUserID(r)
+	userTokenID, err := authentication.ExtractUserID(r)
 	if err != nil {
 		responses.Erro(w, http.StatusUnauthorized, err)
 		return
 	}
 
-	if userIDToken != ID {
+	if userTokenID != ID {
 		responses.Erro(w, http.StatusForbidden, errors.New("não é permitido atualizar outro usuário"))
 		return
 	}
@@ -166,13 +167,13 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userIDToken, err := authentication.ExtractUserID(r)
+	userTokenID, err := authentication.ExtractUserID(r)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	if userIDToken != ID {
+	if userTokenID != ID {
 		responses.Erro(w, http.StatusForbidden, errors.New("não é permitido atualizar outro usuário"))
 		return
 	}
@@ -319,4 +320,74 @@ func FindFollowing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.JSON(w, http.StatusOK, following)
+}
+
+// UpdatePassword atualiza a senha de um usuario na aplicacao
+func UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userTokenID, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userID != userTokenID {
+		responses.Erro(w, http.StatusForbidden, errors.New("Não é possível alterar a senha de outro usuário."))
+		return
+	}
+
+	bodyRequest, err := io.ReadAll(r.Body)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	var passwords models.Password
+	if err = json.Unmarshal(bodyRequest, &passwords); err != nil {
+		responses.Erro(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewUsersRepositories(db)
+	currentPasswordInDB, err := repo.FindPassword(userID)
+	if err != nil {
+		responses.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	currentPassword := passwords.CurrentPassword
+
+	if err = security.PasswordVerify(currentPasswordInDB, currentPassword); err != nil {
+		responses.Erro(w, http.StatusUnauthorized, errors.New("senha atual incorreta"))
+		return
+	}
+
+	newPassword := passwords.NewPassword
+
+	hashPassword, err := security.Hash(newPassword)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err = repo.UpdatePassword(userID, string(hashPassword)); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusCreated, nil)
 }
