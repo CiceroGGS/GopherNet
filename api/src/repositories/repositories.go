@@ -168,3 +168,33 @@ func (repo users) SearchByEmail(email string) (models.Users, error) {
 
 	return user, nil
 }
+
+// Follow registra um novo relacionamento de seguidor entre usuários.
+func (repo users) Follow(userID, followerID uint64) error {
+	statement, err := repo.db.Prepare("INSERT IGNORE INTO seguidores (usuario_id, seguidor_id) VALUES (?, ?)")
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err := statement.Exec(userID, followerID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Unfollow remove o relacionamento de seguidor entre usuários.
+func (repo users) Unfollow(userID, followerID uint64) error {
+	statement, err := repo.db.Prepare("DELETE FROM seguidores WHERE usuario_id = ? AND seguidor_id = ?")
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err := statement.Exec(userID, followerID); err != nil {
+		return err
+	}
+
+	return nil
+}

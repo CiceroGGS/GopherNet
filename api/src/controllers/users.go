@@ -78,7 +78,7 @@ func SearchUsers(w http.ResponseWriter, r *http.Request) {
 func FindUserByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	ID, err := strconv.ParseUint(params["id"], 10, 64)
+	ID, err := strconv.ParseUint(params["userId"], 10, 64)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
@@ -105,7 +105,7 @@ func FindUserByID(w http.ResponseWriter, r *http.Request) {
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	ID, err := strconv.ParseUint(params["id"], 10, 64)
+	ID, err := strconv.ParseUint(params["userId"], 10, 64)
 	if err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
@@ -160,7 +160,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 func RemoveUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	ID, err := strconv.ParseUint(params["id"], 10, 64)
+	ID, err := strconv.ParseUint(params["userId"], 10, 64)
 	if err != nil {
 		responses.Erro(w, http.StatusBadRequest, err)
 		return
@@ -186,6 +186,80 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 
 	repo := repositories.NewUsersRepositories(db)
 	if err = repo.Delete(ID); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, nil)
+}
+
+// FollowUser permite que um usuário siga outro usuário na aplicação.
+func FollowUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	followerID, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userID == followerID {
+		responses.Erro(w, http.StatusForbidden, errors.New("Não é permitido que um usuário siga a si mesmo."))
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewUsersRepositories(db)
+	if err = repo.Follow(userID, followerID); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, nil)
+}
+
+// UnfollowUser permite que um usuário deixe de seguir outro usuário na aplicação.
+func UnfollowUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	followerID, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userID == followerID {
+		responses.Erro(w, http.StatusInternalServerError, errors.New("Não é permitido que um usuário siga ou deixa de seguir a si mesmo."))
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewUsersRepositories(db)
+	if err = repo.Unfollow(userID, followerID); err != nil {
 		responses.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
