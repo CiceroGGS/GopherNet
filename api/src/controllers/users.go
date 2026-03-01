@@ -227,7 +227,7 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responses.JSON(w, http.StatusOK, nil)
+	responses.JSON(w, http.StatusCreated, nil)
 }
 
 // UnfollowUser permite que um usuário deixe de seguir outro usuário na aplicação.
@@ -265,4 +265,58 @@ func UnfollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.JSON(w, http.StatusOK, nil)
+}
+
+// FindFollowers retorna todos os seguidores de um usuarios
+func FindFollowers(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewUsersRepositories(db)
+	followers, err := repo.FindFollowers(userID)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, followers)
+}
+
+// FindFollowing retorna os usuarios que estao sendo seguido pelo usuario que esta utilizado a apliacacao
+func FindFollowing(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewUsersRepositories(db)
+	following, err := repo.FindFollowing(userID)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, following)
 }

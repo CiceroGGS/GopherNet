@@ -198,3 +198,94 @@ func (repo users) Unfollow(userID, followerID uint64) error {
 
 	return nil
 }
+
+// FindFollowers bysca os seguidores existente de um usuario na aplicacao
+func (repo users) FindFollowers(userID uint64) ([]models.Users, error) {
+	rows, err := repo.db.Query(
+		`
+		SELECT
+			u.id,
+			u.nome,
+			u.nick,
+			u.email,
+			u.criadoEm
+		FROM
+			usuarios u
+		INNER JOIN
+			seguidores s
+		ON
+			u.id = s.seguidor_id
+		WHERE
+			s.usuario_id = ?
+		`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []models.Users
+
+	for rows.Next() {
+		var user models.Users
+		if err = rows.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedIn,
+		); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+// FindFollowing busca os usuarios que estao sendo seguidos por algum outro usuario
+func (repo users) FindFollowing(userID uint64) ([]models.Users, error) {
+	rows, err := repo.db.Query(
+		`
+		SELECT
+			u.id,
+			u.nome,
+			u.nick,
+			u.email,
+			u.criadoEm
+		FROM
+			usuarios u
+		INNER JOIN
+			seguidores s
+		ON
+			u.id = s.usuario_id
+		WHERE
+			s.seguidor_id = ?
+	`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []models.Users
+
+	for rows.Next() {
+		var user models.Users
+		if err = rows.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedIn,
+		); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
