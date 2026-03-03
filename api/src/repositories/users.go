@@ -7,6 +7,7 @@ import (
 	"gophernet/src/models"
 )
 
+// users representa um repositorio de usuarios
 type users struct {
 	db *sql.DB
 }
@@ -16,7 +17,7 @@ func NewUsersRepositories(db *sql.DB) *users {
 	return &users{db}
 }
 
-// CreateUsersDB insere um novo usuário no banco de dados e retorna o ID gerado.
+// Create insere um novo usuário no banco de dados e retorna o ID gerado.
 func (repo users) Create(user models.Users) (uint64, error) {
 	statement, err := repo.db.Prepare("INSERT INTO usuarios (nome, nick, email, senha) VALUES (?, ?, ?, ?)")
 	if err != nil {
@@ -43,7 +44,7 @@ func (repo users) Create(user models.Users) (uint64, error) {
 	return user.ID, nil
 }
 
-// GetUsersDB busca e retorna todos os usuários cujo nome ou nick correspondam ao filtro informado.
+// Search busca e retorna todos os usuários cujo nome ou nick correspondam ao filtro informado.
 func (repo users) Search(nameOrNick string) ([]models.Users, error) {
 	nameOrNick = fmt.Sprintf("%%%s%%", nameOrNick)
 
@@ -80,7 +81,7 @@ func (repo users) Search(nameOrNick string) ([]models.Users, error) {
 	return users, nil
 }
 
-// GetUserByIDFromDB busca e retorna um único usuário no banco de dados pelo seu ID.
+// FindByID busca e retorna um único usuário no banco de dados pelo seu ID.
 func (repo users) FindByID(ID uint64) (models.Users, error) {
 	row, err := repo.db.Query("SELECT id, nome, nick, email, criadoEm FROM usuarios WHERE id = ?", ID)
 	if err != nil {
@@ -105,7 +106,7 @@ func (repo users) FindByID(ID uint64) (models.Users, error) {
 	return user, nil
 }
 
-// UpdateUserInDB atualiza o nome, nick e email de um usuário no banco de dados pelo seu ID.
+// Update atualiza o nome, nick e email de um usuário no banco de dados pelo seu ID.
 func (repo users) Update(user models.Users, ID uint64) error {
 	statement, err := repo.db.Prepare("UPDATE usuarios SET nome = ?, nick = ?, email = ? WHERE id = ?")
 	if err != nil {
@@ -126,7 +127,7 @@ func (repo users) Update(user models.Users, ID uint64) error {
 	return nil
 }
 
-// DeleteUserInDB remove permanentemente um usuário do banco de dados pelo seu ID, retornando erro caso não seja encontrado.
+// Delete remove permanentemente um usuário do banco de dados pelo seu ID, retornando erro caso não seja encontrado.
 func (repo users) Delete(ID uint64) error {
 	statement, err := repo.db.Prepare("DELETE FROM usuarios WHERE id = ?")
 	if err != nil {
@@ -323,6 +324,7 @@ func (repo users) UpdatePassword(userID uint64, newPassword string) error {
 	return nil
 }
 
+// FindPassword retorna a resenha de um usuario da aplicacao cadastrada no banco de dados
 func (repo users) FindPassword(userID uint64) (string, error) {
 	row, err := repo.db.Query(
 		`
