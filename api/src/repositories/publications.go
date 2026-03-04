@@ -88,8 +88,94 @@ func (repo publications) FindByID(publicationsID uint64) (models.Publications, e
 	return publication, nil
 }
 
-// Search
-func (repo publications) Search() ([]models.Publications, error) {
+// Search busca todas as publicacoes de todos usuarios que o usuario da aplicao segue
+func (repo publications) Search(userID uint64) ([]models.Publications, error) {
+	rows, err := repo.db.Query(
+		`
+		SELECT DISTINCT
+			p.id, p.titulo, p.conteudo, p.autorId,
+			u.nick, p.curtidas, p.criadaEm
+		FROM
+			publicacoes p
+		INNER JOIN
+			usuarios u ON p.autorId = u.id
+		LEFT JOIN
+			seguidores s ON p.autorId = s.usuario_id
+		WHERE
+			p.autorId = ? OR s.seguidor_id = ?
+		`,
+		userID,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-	return nil, nil
+	var publications []models.Publications
+
+	for rows.Next() {
+		var publication models.Publications
+
+		if err = rows.Scan(
+			&publication.ID,
+			&publication.Title,
+			&publication.Content,
+			&publication.AuthorID,
+			&publication.AuthorNick,
+			&publication.Likes,
+			&publication.CreatedIn,
+		); err != nil {
+			return nil, err
+		}
+
+		publications = append(publications, publication)
+	}
+
+	return publications, nil
+}
+
+// Update atualiza os dados de uma publicação específica no banco.
+func (repo publications) Update(publicationID uint64, publication models.Publications) error {
+	statement, err := repo.db.Prepare(
+		`
+		UPDATE
+			publicacoes
+		SET
+			titulo = ?,
+			conteudo = ?
+		WHERE
+			id = ?
+		`,
+	)
+	if err != nil {
+		return err
+	}
+
+	if _, err = statement.Exec(publication.Title, publication.Content, publicationID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Delete remove permanentemente uma publicação do banco de dados com base no ID informado.
+func (repo publications) Delete(publicationsID uint64) error {
+	statement, err := repo.db.Prepare(
+		`
+		DELETE FROM
+			publicacoes
+		WHERE
+			id = ?
+		`,
+	)
+	if err != nil {
+		return err
+	}
+
+	if _, err := statement.Exec(publicationsID); err != nil {
+		return err
+	}
+
+	return nil
 }

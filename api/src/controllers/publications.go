@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"gophernet/authentication"
 	"gophernet/src/data"
 	"gophernet/src/models"
@@ -79,14 +80,128 @@ func FindPublicationByID(w http.ResponseWriter, r *http.Request) {
 	responses.JSON(w, http.StatusOK, publication)
 }
 
+// SearchPublications retorna todas as publicacoes de todos usuarios que o usuario da aplicao segue
 func SearchPublications(w http.ResponseWriter, r *http.Request) {
+	userID, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
 
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	repo := repositories.NewPublicationsRepositories(db)
+	publications, err := repo.Search(userID)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, publications)
 }
 
+// UpdatePublication permite que um usuário autenticado atualize uma publicação de sua própria autoria.
 func UpdatePublication(w http.ResponseWriter, r *http.Request) {
+	userID, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
 
+	params := mux.Vars(r)
+	publicationID, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewPublicationsRepositories(db)
+	publicationInDB, err := repo.FindByID(publicationID)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if publicationInDB.AuthorID != userID {
+		responses.Erro(w, http.StatusForbidden, errors.New("Nao e possivel atualizar a publicacao de outro usuario"))
+		return
+	}
+
+	bodyRequest, err := io.ReadAll(r.Body)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	var publication models.Publications
+
+	if err = json.Unmarshal(bodyRequest, &publication); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// if err = publication.Prepare(); err != nil {
+	// 	responses.Erro(w, http.StatusBadRequest, err)
+	// 	return
+	// }
+
+	if err = repo.Update(publicationID, publication); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, publication)
 }
 
+// DeletePublication permite que um usuário autenticado exclua uma publicação de sua própria autoria.
 func DeletePublication(w http.ResponseWriter, r *http.Request) {
+	userID, err := authentication.ExtractUserID(r)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
 
+	params := mux.Vars(r)
+	publicationID, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewPublicationsRepositories(db)
+	publicationInDB, err := repo.FindByID(publicationID)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if publicationInDB.AuthorID != userID {
+		responses.Erro(w, http.StatusBadRequest, errors.New("Nao e possivel deletar a publicacoa de outro usuario"))
+		return
+	}
+
+	if err = repo.Delete(publicationID); err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, nil)
 }
