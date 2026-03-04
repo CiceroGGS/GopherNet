@@ -151,6 +151,7 @@ func (repo publications) Update(publicationID uint64, publication models.Publica
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	if _, err = statement.Exec(publication.Title, publication.Content, publicationID); err != nil {
 		return err
@@ -172,10 +173,57 @@ func (repo publications) Delete(publicationsID uint64) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	if _, err := statement.Exec(publicationsID); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// SearchByUser busca todas as publicacoes de um usuario da aplicacao
+func (repo publications) SearchByUser(userID uint64) ([]models.Publications, error) {
+	rows, err := repo.db.Query(
+		`
+		SELECT
+			p.id, p.titulo, p.conteudo, p.autorId,
+			u.nick, p.curtidas, p.criadaEm
+		FROM
+			publicacoes p
+		INNER JOIN
+			usuarios u
+		ON
+			 u.id = p.autorId
+		WHERE
+			p.autorId = ?
+		`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var publications []models.Publications
+
+	for rows.Next() {
+		var publication models.Publications
+
+		if err = rows.Scan(
+			&publication.ID,
+			&publication.Title,
+			&publication.Content,
+			&publication.AuthorID,
+			&publication.AuthorNick,
+			&publication.Likes,
+			&publication.CreatedIn,
+		); err != nil {
+			return nil, err
+		}
+
+		publications = append(publications, publication)
+	}
+
+	return publications, nil
 }

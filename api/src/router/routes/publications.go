@@ -36,4 +36,10 @@ var publicationsRoutes = []Routes{
 		Function:               controllers.DeletePublication,
 		RequiresAuthentication: true,
 	},
+	{
+		URI:                    "/usuarios/{usuarioId}/publicacoes",
+		Method:                 http.MethodGet,
+		Function:               controllers.SearchPublicationsByUser,
+		RequiresAuthentication: true,
+	},
 }
