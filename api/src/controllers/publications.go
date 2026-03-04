@@ -231,3 +231,53 @@ func SearchPublicationsByUser(w http.ResponseWriter, r *http.Request) {
 
 	responses.JSON(w, http.StatusOK, publicactions)
 }
+
+// LikePublication adiciona uma curtina na publicacao
+func LikePublication(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	publicationID, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewPublicationsRepositories(db)
+	if err = repo.LikePublication(publicationID); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, nil)
+}
+
+// DislikePublication remove uma curtina na publicacao
+func DislikePublication(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	publicationID, err := strconv.ParseUint(params["publicacaoId"], 10, 64)
+	if err != nil {
+		responses.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := data.Connect()
+	if err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	repo := repositories.NewPublicationsRepositories(db)
+	if err = repo.DislkePublication(publicationID); err != nil {
+		responses.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, nil)
+}

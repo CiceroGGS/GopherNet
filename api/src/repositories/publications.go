@@ -227,3 +227,51 @@ func (repo publications) SearchByUser(userID uint64) ([]models.Publications, err
 
 	return publications, nil
 }
+
+// LikePublication adiciona uma curtina uma publicacao
+func (repo publications) LikePublication(publicationID uint64) error {
+	statement, err := repo.db.Prepare(
+		`
+		UPDATE
+			publicacoes
+		SET
+			curtidas = curtidas + 1
+		WHERE
+			id = ?
+		`,
+	)
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err := statement.Exec(publicationID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DislkePublication retira um curtida da publicacao
+func (repo publications) DislkePublication(publicationID uint64) error {
+	statement, err := repo.db.Prepare(
+		`
+		UPDATE
+			publicacoes
+		SET
+			curtidas = curtidas - 1
+		WHERE
+			id = ?
+		`,
+	)
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err := statement.Exec(publicationID); err != nil {
+		return err
+	}
+
+	return nil
+}
