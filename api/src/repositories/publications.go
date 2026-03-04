@@ -259,7 +259,11 @@ func (repo publications) DislkePublication(publicationID uint64) error {
 		UPDATE
 			publicacoes
 		SET
-			curtidas = curtidas - 1
+			curtidas =
+		CASE
+			WHEN curtidas > 0 THEN curtidas - 1
+		ELSE
+			curtidas END
 		WHERE
 			id = ?
 		`,
