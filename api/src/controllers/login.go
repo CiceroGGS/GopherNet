@@ -11,6 +11,7 @@ import (
 	"gophernet/src/security"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 // Login e responsavel pelo login e autenticacao do usuario na API
@@ -53,5 +54,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println(token)
-	w.Write([]byte("Logado com sucesso"))
+
+	userID := strconv.FormatUint(userInDB.ID, 10)
+
+	responses.JSON(w, http.StatusOK, models.AuthenticationData{ID: userID, Token: token})
 }
