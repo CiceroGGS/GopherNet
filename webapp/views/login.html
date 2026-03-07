@@ -12,15 +12,18 @@
 <body>
     <div class="container-login">
         <div>
-            <form class="gophernet-form">
-                <span> Bem bindo ao GopherNet! </span>
+            <form class="gophernet-form" id="login">
+                <span> Bem vindo ao GopherNet! </span>
                 <div>
                     <input type="text" name="email" id="email" placeholder="Digite seu e-mail" required="required">
                 </div>
                 <div>
                     <input type="password" name="senha" placeholder="Digite sua senha" required="required">
                 </div>
-                <a href="#">Clique aqui para criar sua conta</a>
+                <p>
+                    Ainda nao tem uma contao?
+                    <a href="/criar-usuario">Clique aqui para criar</a>
+                </p>
                 <button type="submit" class="btn-gophernet">Login</button>
             </form>
         </div>
